@@ -5,7 +5,7 @@ VGA Video output on CORTEX-M3.
 
 Vidout provides 50 x 18 text output on a STM32F103 CPU (e.g. BluePill) 
 using only 24% of the CPU, 1.2K of RAM and 7K of Flash. It's intended 
-as a debug aid and should be trivial to port to other CPUs. 
+as a development aid and should be trivial to port to other CPUs. 
 
 You can see it in action at https://youtu.be/5UFpp3ao460
 
