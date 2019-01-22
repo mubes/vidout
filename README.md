@@ -10,9 +10,9 @@ as a debug aid and should be trivial to port to other CPUs.
 You can see it in action at https://youtu.be/5UFpp3ao460
 
 Pinout;
-   PA1 = VSYNC (Pin 14 on VGA connector)
-   PA8 = HSYNC (Pin 13 on VGA connector)
-   PA7 = Video (Pin 1, 2 or 3 on VGA connector for R, G or B respectively).
+* PA1 = VSYNC (Pin 14 on VGA connector)
+* PA8 = HSYNC (Pin 13 on VGA connector)
+* PA7 = Video (Pin 1, 2 or 3 on VGA connector for R, G or B respectively).
 
 Note that the spec calls for VSYNC/HSYNC to be 5V and Video to be 1V max so 
 you might want to put a series resistor on PA7. The input impedence of VGA 
