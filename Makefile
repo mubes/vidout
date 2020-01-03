@@ -1,6 +1,6 @@
 #VERBOSE=1
 #DEBUG ?= 1
-CROSS_COMPILE ?= $(HOME)/bin/armgcc/bin/arm-none-eabi-
+CROSS_COMPILE ?= arm-none-eabi-
 
 ##########################################################################
 # User configuration and firmware specific object files
@@ -41,15 +41,19 @@ DEBUG_OPTS = -g3 -gdwarf-2 -ggdb
 # CMSIS Files
 # ===========
 CMSIS_DIR=thirdparty/CMSIS
-INCLUDE_PATHS += $(patsubst %,-I%,$(shell find $(CMSIS_DIR)/inc -name "*.h" -exec dirname {} \; | uniq ))
-CFILES += $(shell find $(CMSIS_DIR)/src -name "*.c" -print)
-SFILES += $(shell find $(CMSIS_DIR)/src -name "*.s" -print)
+INCLUDE_PATHS += $(CMSIS_DIR)/inc
+
+CFILES += $(CMSIS_DIR)/src/core_cm3.c \
+		  $(CMSIS_DIR)/src/system_stm32f10x.c
+SFILES += $(CMSIS_DIR)/src/startup_stm32f10x_md.s
 
 # Video Files
 # ===========
 VIDEO_DIR=vidout
-INCLUDE_PATHS += $(patsubst %,-I%,$(shell find $(VIDEO_DIR) -name "*.h" -exec dirname {} \; | uniq ))
-CFILES += $(shell find $(VIDEO_DIR) -name "*.c" -print)
+INCLUDE_PATHS += $(VIDEO_DIR)
+CFILES += $(VIDEO_DIR)/displayFile.c \
+		  $(VIDEO_DIR)/rasterLine.c \
+		  $(VIDEO_DIR)/vidout.c
 
 ##########################################################################
 # Project-specific files
@@ -59,9 +63,9 @@ CFILES += $(shell find $(VIDEO_DIR) -name "*.c" -print)
 # ==========
 App_DIR=app
 App_Inc_DIR=app
-INCLUDE_PATHS += $(patsubst %,-I%,$(shell find $(App_Inc_DIR) -name "*.h" -exec dirname {} \; | uniq ))
+INCLUDE_PATHS += $(App_Inc_DIR)
 
-CFILES += $(shell find $(App_DIR) -name "*.c" -print)
+CFILES += $(App_DIR)/main.c
 
 ##########################################################################
 # GNU GCC compiler prefix and location
@@ -122,11 +126,13 @@ OBJS =  $(patsubst %.c,%.o,$(CFILES)) $(patsubst %.s,%.o,$(SFILES))
 POBJS = $(patsubst %,$(OLOC)/%,$(OBJS))
 PDEPS =$(POBJS:.o=.d)
 
+INCLUDE_FLAGS = $(foreach d, $(INCLUDE_PATHS), -I$d)
+
 all : build
 
 $(OLOC)/%.o : %.c
 	$(Q)mkdir -p $(basename $@)
-	$(call cmd, \$(CC) -c $(CFLAGS) $(PROFILING) $(INCLUDE_PATHS) -MMD -o $@ $< ,\
+	$(call cmd, \$(CC) -c $(CFLAGS) $(PROFILING) $(INCLUDE_FLAGS) -MMD -o $@ $< ,\
 	Compiling $<)
 
 $(OLOC)/%.o : %.s
