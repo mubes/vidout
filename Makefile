@@ -1,5 +1,9 @@
 #VERBOSE=1
 #DEBUG ?= 1
+
+#Define this to export LCD information over the ITM channel 
+WITH_ORBLCD_MONITOR=1
+
 CROSS_COMPILE ?= arm-none-eabi-
 
 ##########################################################################
@@ -15,8 +19,12 @@ OPT_LEVEL =
 VARIANT = "Debug"
 else
 GCC_DEFINE= 
-OPT_LEVEL = -O2
+OPT_LEVEL = -O3
 VARIANT = "Release"
+endif
+
+ifdef WITH_ORBLCD_MONITOR
+GCC_DEFINE+=-DMONITOR_OUTPUT
 endif
 
 LDLIBS = 
@@ -31,7 +39,7 @@ CPU_TYPE = cortex-$(CORTEX_TYPE)
 CFILES =
 SFILES =
 OLOC = ofiles
-INCLUDE_PATHS = -I$(OLOC)
+INCLUDE_PATHS = $(OLOC) /home/dmarples/Develop/orb/orbuculum/Inc
 DEBUG_OPTS = -g3 -gdwarf-2 -ggdb
 
 ##########################################################################
@@ -53,6 +61,7 @@ VIDEO_DIR=vidout
 INCLUDE_PATHS += $(VIDEO_DIR)
 CFILES += $(VIDEO_DIR)/displayFile.c \
 		  $(VIDEO_DIR)/rasterLine.c \
+		  $(VIDEO_DIR)/itm_messages.c \
 		  $(VIDEO_DIR)/vidout.c
 
 ##########################################################################
@@ -116,8 +125,7 @@ MAP=-Wl,-Map=$(OLOC)/$(OUTFILE).map,--cref
 
 CFLAGS =  $(ARCH_FLAGS) $(STARTUP_DEFS) $(OPT_LEVEL) $(DEBUG_OPTS) -DTARGET=$(TARGET) -D$(TARGET) \
 		-ffunction-sections -fdata-sections -Wdouble-promotion -Wall $(GCC_DEFINE)
-ASFLAGS = -c $(DEBUG_OPTS) $(INCLUDE_PATHS) $(ARCH_FLAGS) $(GCC_DEFINE) \
-          -x assembler-with-cpp
+ASFLAGS = -c $(DEBUG_OPTS) $(ARCH_FLAGS) -x assembler-with-cpp
 LDFLAGS = $(CFLAGS) $(ARCH_FLAGS) -Wl,--no-wchar-size-warning,--gc-sections $(MAP) $(HOST)
 
 OCFLAGS = --strip-unneeded
@@ -146,11 +154,11 @@ $(OLOC)/%.o : %.S
 	Assembling $<)
 
 build:  $(POBJS) $(SYS_OBJS) 
-	@echo " Built $(VARIANT) version"
 	$(Q)$(LD) -g $(LDFLAGS) -T $(LD_SCRIPT) $(MAP) $(POBJS) $(LDLIBS) -o $(OLOC)/$(OUTFILE).elf
 	$(Q)$(SIZE) $(OLOC)/$(OUTFILE).elf
 	$(Q)$(OBJCOPY) $(OCFLAGS) -O binary $(OLOC)/$(OUTFILE).elf $(OLOC)/$(OUTFILE).bin
 	$(Q)$(OBJCOPY) $(OCFLAGS) -O ihex $(OLOC)/$(OUTFILE).elf $(OLOC)/$(OUTFILE).hex
+	@echo " Built $(VARIANT) version"
 
 tags:
 	-@etags $(CFILES) 2> /dev/null

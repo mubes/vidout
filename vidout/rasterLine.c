@@ -39,8 +39,10 @@
 #include "displayFile.h"
 #include "rasterLine.h"
 
-#pragma GCC push_options
-#pragma GCC optimize("O1")
+#ifdef MONITOR_OUTPUT
+#include "itm_messages.h"
+#include "orblcd_protocol.h"
+#endif
 
 #define OPTIMISED_RASTERLINE_BITS (4)
 
@@ -54,37 +56,40 @@ __attribute__((__section__(".ramprog"))) void rasterLine(struct displayFile *d, 
      * rasteriser needs to be substituted in here.
      */
 
-    uint32_t *w2          = w;
+    uint32_t  *w2         = 0;
+    int c                 = 0;
     char *    displayLine = DF_getLine(d, rl >> OPTIMISED_RASTERLINE_BITS);
     uint32_t  index       = rl & ((1 << OPTIMISED_RASTERLINE_BITS) - 1);
 
     int32_t chrs = DF_getXres(d);
+    uint32_t *g = DF_getG(d, rl);     /* ...any graphics element to be rasterised */
+    if (g)
+      {
+	w2 = w+DF_getGXstartW(d);
+	c = DF_getGXlenW(d);
+      }
 
     /* This could overrun, but we make it a constraint in the definition that the buffer has to be word aligned */
     while (chrs > 0) {
-        *w++ = ((f->d[((displayLine[3] - f->firstChr) << OPTIMISED_RASTERLINE_BITS) + index]) << 24) |
+        *w   = ((f->d[((displayLine[3] - f->firstChr) << OPTIMISED_RASTERLINE_BITS) + index]) << 24) |
                ((f->d[((displayLine[2] - f->firstChr) << OPTIMISED_RASTERLINE_BITS) + index]) << 16) |
                ((f->d[((displayLine[1] - f->firstChr) << OPTIMISED_RASTERLINE_BITS) + index]) << 8) |
                ((f->d[((displayLine[0] - f->firstChr) << OPTIMISED_RASTERLINE_BITS) + index]));
+	if ((g) && (w>=w2) && (c))
+	  {
+	    /* Fold in the graphics */
+	    *w |= *g++;
+	    c--;
+	  }
+
+#ifdef MONITOR_OUTPUT
+	/* Send this to the monitor if appropriate */
+	ITM_Send32(LCD_DATA_CHANNEL,*w);
+#endif
+
+	w++;
         displayLine += 4;
         chrs -= 4;
-    }
-
-    /* Check for any graphics element to be rasterised */
-    uint32_t *g = DF_getG(d, rl);
-    if (g) {
-        /* Get starting offset into line, and count of words to transfer */
-        w2 += DF_getGXstartW(d);
-        uint32_t c = DF_getGXlenW(d);
-
-        if ((DF_getGXstartW(d) + DF_getGXlenW(d)) * 4 > XEXTENTB) {
-            /* Max out at the edge of the screen */
-            c = (XEXTENTB >> 2) - DF_getGXstartW(d);
-        }
-
-        while (c--) {
-            *w2++ |= *g++;
-        }
     }
 }
 

@@ -53,6 +53,11 @@
 #include "rasterLine.h"
 #include "vidout.h"
 
+#ifdef MONITOR_OUTPUT
+#include "itm_messages.h"
+#include "orblcd_protocol.h"
+#endif
+
 #include "font-8x16basic.cinc" /* The font to use */
 
 /* Setup materials section */
@@ -136,9 +141,6 @@ static volatile struct videoMachine {
  * section to include the line "*(.ramprog .ramprog.*). This will allow the code
  * to be copied along with initialized data.
  */
-
-#pragma GCC push_options
-#pragma GCC optimize("O2")
 
 /* ============================================================================================ */
 
@@ -229,6 +231,14 @@ __attribute__((__section__(".ramprog"))) void DMA_CHANNEL_IRQHandler(void)
         rasterLine(_v.d, _v.f, (uint32_t *)_v.lineBuff[0], 0);
         _v.readLine = 0;
 
+#ifdef MONITOR_OUTPUT
+	if (_v.opLine == YSIZE * FONTHEIGHT)
+	  {
+	    /* This is sent at the start of every frame in case the other end wasn't awake */
+	    ITM_Send32(LCD_COMMAND_CHANNEL,ORBLCD_OPEN_SCREEN(XSIZE*8,YSIZE*16,ORBLCD_DEPTH_1));
+	  }
+#endif
+
         /* Zero out line 1 as this will be used for blanking */
         for (uint32_t t = 0; t < XSIZE; t++)
             _v.lineBuff[1][t] = 0;
@@ -237,8 +247,6 @@ __attribute__((__section__(".ramprog"))) void DMA_CHANNEL_IRQHandler(void)
         rasterLine(_v.d, _v.f, (uint32_t *)_v.lineBuff[!_v.readLine], _v.opLine++);
     }
 }
-
-#pragma GCC pop_options
 
 /* ============================================================================================ */
 /* ============================================================================================ */

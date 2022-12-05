@@ -3,6 +3,14 @@ VGA VIDEO Output on a STM32F103C8 (vidout)
 
 VGA Video output on CORTEX-M3.  
 
+* This is a revised version of the code which includes orblcd support code.
+orblcd allows you to run vidout without a 'real' VGA monitor to test against.
+Take a look at at [orbcode](https://orbcode.org/) for more information on
+orbuculum in general and orblcd in particular. If you don't want to use
+orblcd then comment out `WITH_ORBLCD_MONITOR=1` in the makefile...TBH, it will
+still output to a VGA monitor correctly even with orblcd running in parallel,
+but that just gets confusing. *
+
 Vidout provides 50 x 18 text output on a STM32F103 CPU (e.g. BluePill) 
 using only 24% of the CPU, 1.2K of RAM and 7K of Flash. It's intended 
 as a development aid and should be trivial to port to other CPUs. 
